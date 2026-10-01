@@ -609,7 +609,6 @@ try {
   if (cfg.clientName) document.getElementById('clientName').value = cfg.clientName;
   if (cfg.clientId)   document.getElementById('clientId').value   = cfg.clientId;
   if (cfg.waNumber)   document.getElementById('waNumber').value   = cfg.waNumber;
-  if (cfg.webhookUrl) document.getElementById('webhookUrl').value = cfg.webhookUrl;
   if (cfg.interval)   document.getElementById('interval').value   = cfg.interval;
   if (cfg.timeout)    document.getElementById('timeout').value    = cfg.timeout;
   if (cfg.rosVersion) document.getElementById('rosVersion').value = cfg.rosVersion;
@@ -779,10 +778,6 @@ function generateScript() {
 
   const header = clientId ? `${clientId} - ${clientName}` : clientName;
   const rosLabel = ros === '6' ? 'ROUTEROS 6.49.17' : 'ROUTEROS 7.x';
-
-  // UP e DOWN script inline (funciona no ROS 6 e 7)
-  const upScript   = `:local Host \\$host; :local Comment ""; :foreach i in=[/tool netwatch find] do={ :if ([/tool netwatch get \\$i host] = \\$Host) do={ :set Comment [/tool netwatch get \\$i comment] } }; :local Router [/system identity get name]; :local Json (\\"{\\\\\\\"status\\\\\\\":\\\\\\\"up\\\\\\\",\\\\\\\"host\\\\\\\":\\\\\\\"\\" . \\$Host . \\"\\\\\\\",\\\\\\\"nome\\\\\\\":\\\\\\\"\\" . \\$Comment . \\"\\\\\\\",\\\\\\\"router\\\\\\\":\\\\\\\"\\" . \\$Router . \\"\\\\\\\"}\\"); /tool fetch url=\\"${webhook}\\" http-method=post http-header-field=\\"Content-Type: application/json\\" http-data=\\$Json mode=https output=none`;
-  const downScript = `:local Host \\$host; :local Comment ""; :foreach i in=[/tool netwatch find] do={ :if ([/tool netwatch get \\$i host] = \\$Host) do={ :set Comment [/tool netwatch get \\$i comment] } }; :local Router [/system identity get name]; :local Json (\\"{\\\\\\\"status\\\\\\\":\\\\\\\"down\\\\\\\",\\\\\\\"host\\\\\\\":\\\\\\\"\\" . \\$Host . \\"\\\\\\\",\\\\\\\"nome\\\\\\\":\\\\\\\"\\" . \\$Comment . \\"\\\\\\\",\\\\\\\"router\\\\\\\":\\\\\\\"\\" . \\$Router . \\"\\\\\\\"}\\"); /tool fetch url=\\"${webhook}\\" http-method=post http-header-field=\\"Content-Type: application/json\\" http-data=\\$Json mode=https output=none`;
 
   // Agrupar por tipo para organizar com comentários
   const grupos = {};
