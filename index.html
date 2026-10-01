@@ -1,0 +1,922 @@
+<title>Netwatch Generator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+/* ─── Layout: sidebar config + main área de equipamentos ─── */
+:root {
+  --bg:        #0f1117;
+  --bg2:       #181c27;
+  --bg3:       #1e2333;
+  --border:    #2a3045;
+  --fg:        #e2e8f0;
+  --fg2:       #8892a4;
+  --accent:    #3b7cf4;
+  --accent2:   #2563d4;
+  --green:     #22c55e;
+  --red:       #ef4444;
+  --yellow:    #f59e0b;
+  --radius:    8px;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:     #f0f4fb;
+    --bg2:    #ffffff;
+    --bg3:    #e8edf6;
+    --border: #d1dae8;
+    --fg:     #1a2035;
+    --fg2:    #5a6580;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg:     #f0f4fb;
+  --bg2:    #ffffff;
+  --bg3:    #e8edf6;
+  --border: #d1dae8;
+  --fg:     #1a2035;
+  --fg2:    #5a6580;
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ─── Header ─── */
+.header {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 100;
+}
+.header-logo {
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.header h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.header-sub {
+  font-size: 12px;
+  color: var(--fg2);
+  margin-left: 2px;
+}
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ─── Layout ─── */
+.app {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  min-height: calc(100vh - 61px);
+}
+@media (max-width: 700px) {
+  .app { grid-template-columns: 1fr; }
+}
+
+/* ─── Sidebar ─── */
+.sidebar {
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field-group label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--fg2);
+}
+.field-group input, .field-group select {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  width: 100%;
+  outline: none;
+  transition: border-color .15s;
+}
+.field-group input:focus, .field-group select:focus {
+  border-color: var(--accent);
+}
+.field-group input::placeholder { color: var(--fg2); }
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--fg2);
+  margin: 0;
+}
+
+/* Interval/Timeout row */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* ─── Botões ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background .15s, opacity .15s;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--accent2); }
+.btn-secondary {
+  background: var(--bg3);
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger {
+  background: transparent;
+  color: var(--red);
+  border: 1px solid var(--border);
+  padding: 5px 9px;
+  font-size: 12px;
+}
+.btn-danger:hover { background: #ef444422; border-color: var(--red); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-full { width: 100%; }
+
+/* ─── Main ─── */
+.main {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (max-width: 700px) { .main { padding: 16px; } }
+
+.main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.main-header h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ─── Adicionar equipamento ─── */
+.add-row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto auto;
+  gap: 8px;
+  align-items: end;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+@media (max-width: 600px) {
+  .add-row { grid-template-columns: 1fr 1fr; }
+  .add-row .btn { grid-column: span 2; }
+}
+
+.add-row .field-group { margin: 0; }
+
+/* ─── Tabela de equipamentos ─── */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg2);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+thead th {
+  background: var(--bg3);
+  color: var(--fg2);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 10px 14px;
+  text-align: left;
+  white-space: nowrap;
+}
+tbody tr {
+  border-top: 1px solid var(--border);
+  transition: background .1s;
+}
+tbody tr:hover { background: var(--bg3); }
+tbody td {
+  padding: 9px 14px;
+  vertical-align: middle;
+}
+td:first-child { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); }
+td.nome { color: var(--fg); }
+td.tipo .badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--fg2);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--fg2);
+}
+.empty-state svg { opacity: .3; margin-bottom: 12px; }
+.empty-state p { margin: 0; font-size: 13px; }
+
+/* ─── Counter ─── */
+.counter-bar {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.counter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--fg2);
+}
+.counter strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+.dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ─── Modal / Script output ─── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: #00000088;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+}
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-header h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.modal-body {
+  overflow-y: auto;
+  flex: 1;
+}
+.script-block {
+  margin: 0;
+  padding: 20px;
+  background: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--fg);
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 4;
+}
+.modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* ─── Toast ─── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--green);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 300;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .2s, transform .2s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: none; }
+
+/* ─── Import modal ─── */
+.import-area {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.import-area textarea {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: var(--radius);
+  padding: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  resize: vertical;
+  min-height: 200px;
+  width: 100%;
+  outline: none;
+}
+.import-area textarea:focus { border-color: var(--accent); }
+.import-hint { font-size: 12px; color: var(--fg2); margin: 0; }
+</style>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">N</div>
+  <div>
+    <h1>Gerador NetWatch</h1>
+    <div class="header-sub">Oreon Vision</div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-secondary btn-sm" onclick="openImport()">⬆ Importar lista</button>
+    <button class="btn btn-primary btn-sm" onclick="generateScript()">⚡ Gerar Script</button>
+  </div>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <p class="section-title">Configuração do cliente</p>
+
+    <div class="field-group">
+      <label>Nome do cliente / condomínio</label>
+      <input type="text" id="clientName" placeholder="Ex: COND. PITANGUAS" maxlength="60">
+    </div>
+
+    <div class="field-group">
+      <label>Conta / Identificador</label>
+      <input type="text" id="clientId" placeholder="Ex: 9385" maxlength="30">
+    </div>
+
+    <div class="field-group">
+      <label>WhatsApp destino (com DDD)</label>
+      <input type="text" id="waNumber" placeholder="11900000000" maxlength="20" inputmode="numeric">
+    </div>
+
+    <hr class="divider">
+    <p class="section-title">Padrão do Netwatch</p>
+
+    <div class="two-col">
+      <div class="field-group">
+        <label>Interval</label>
+        <select id="interval">
+          <option value="10s">10s</option>
+          <option value="30s">30s</option>
+          <option value="1m">1m</option>
+          <option value="2m">2m</option>
+          <option value="5m">5m</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Timeout</label>
+        <select id="timeout">
+          <option value="1s">1s</option>
+          <option value="2s" selected>2s</option>
+          <option value="3s">3s</option>
+          <option value="5s">5s</option>
+        </select>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <p class="section-title">Versão RouterOS</p>
+    <div class="field-group">
+      <select id="rosVersion">
+        <option value="6">RouterOS 6.x (6.49.17)</option>
+        <option value="7">RouterOS 7.x</option>
+      </select>
+    </div>
+
+    <hr class="divider">
+
+    <button class="btn btn-secondary btn-full" onclick="clearAll()" style="margin-top:auto">
+      🗑 Limpar tudo
+    </button>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- Adicionar equipamento -->
+    <div class="add-row">
+      <div class="field-group">
+        <label>IP</label>
+        <input type="text" id="newIp" placeholder="192.168.1.10" onkeydown="addOnEnter(event)">
+      </div>
+      <div class="field-group">
+        <label>Nome do equipamento</label>
+        <input type="text" id="newNome" placeholder="CFTV - Camera - Entrada Principal" onkeydown="addOnEnter(event)">
+      </div>
+      <div class="field-group">
+        <label>Tipo</label>
+        <select id="newTipo">
+          <option value="CFTV - Camera">📷 Câmera</option>
+          <option value="CFTV - DVR">📼 DVR</option>
+          <option value="ACESSO - Facial">🪪 Facial</option>
+          <option value="ACESSO - Controladora">🔒 Controladora</option>
+          <option value="ACESSO - CIP 850">🔒 CIP 850</option>
+          <option value="ACESSO - TIP 125i">🔒 TIP 125i</option>
+          <option value="ACESSO - XPE 1001 IP">🔒 XPE 1001</option>
+          <option value="ALARME - Central">🚨 Alarme</option>
+          <option value="REDE - Switch">🌐 Switch</option>
+          <option value="REDE - Gateway">🌐 Gateway</option>
+          <option value="">📦 Outro</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="addEquip()">+ Adicionar</button>
+    </div>
+
+    <!-- Cabeçalho da lista -->
+    <div class="main-header">
+      <h2>Equipamentos</h2>
+      <div class="counter-bar">
+        <div class="counter"><div class="dot" style="background:var(--accent)"></div> Total: <strong id="countTotal">0</strong></div>
+        <div class="counter"><div class="dot" style="background:var(--fg2)"></div> CFTV: <strong id="countCftv">0</strong></div>
+        <div class="counter"><div class="dot" style="background:var(--green)"></div> Acesso: <strong id="countAcesso">0</strong></div>
+        <div class="counter"><div class="dot" style="background:var(--red)"></div> Alarme: <strong id="countAlarme">0</strong></div>
+        <div class="counter"><div class="dot" style="background:var(--yellow)"></div> Rede: <strong id="countRede">0</strong></div>
+      </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>IP</th>
+            <th>Nome / Descrição</th>
+            <th>Tipo</th>
+            <th style="width:60px"></th>
+          </tr>
+        </thead>
+        <tbody id="equipTable">
+          <tr id="emptyRow">
+            <td colspan="4">
+              <div class="empty-state">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                <p>Nenhum equipamento cadastrado.<br>Adicione IPs acima ou importe uma lista.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL SCRIPT -->
+<div class="overlay" id="scriptModal" hidden onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>⚡ Script RouterOS — pronto para colar</h3>
+      <button class="btn btn-secondary btn-sm" onclick="closeScriptModal()">✕ Fechar</button>
+    </div>
+    <div class="modal-body">
+      <pre class="script-block" id="scriptOutput"></pre>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeScriptModal()">Fechar</button>
+      <button class="btn btn-primary" onclick="copyScript()">📋 Copiar script</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPORTAR -->
+<div class="overlay" id="importModal" hidden onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:560px">
+    <div class="modal-header">
+      <h3>⬆ Importar lista de equipamentos</h3>
+      <button class="btn btn-secondary btn-sm" onclick="closeImportModal()">✕ Fechar</button>
+    </div>
+    <div class="modal-body">
+      <div class="import-area">
+        <p class="import-hint">Cole uma lista no formato <code>IP;NOME</code>, uma por linha. Exemplo:</p>
+        <p class="import-hint" style="font-family:'JetBrains Mono',monospace; background:var(--bg3); padding:8px 10px; border-radius:6px; border:1px solid var(--border)">192.168.1.10;CFTV - Camera - Entrada Principal<br>192.168.1.50;ACESSO - Facial - Portao Social</p>
+        <textarea id="importText" placeholder="192.168.1.10;CFTV - Camera - Entrada Principal
+192.168.1.50;ACESSO - Facial - Portao Social"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeImportModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="processImport()">Importar</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Estado ─────────────────────────────────────────────────────────────────
+let equips = [];
+
+try {
+  const saved = localStorage.getItem('nw_equips');
+  if (saved) equips = JSON.parse(saved);
+  const cfg = JSON.parse(localStorage.getItem('nw_config') || '{}');
+  if (cfg.clientName) document.getElementById('clientName').value = cfg.clientName;
+  if (cfg.clientId)   document.getElementById('clientId').value   = cfg.clientId;
+  if (cfg.waNumber)   document.getElementById('waNumber').value   = cfg.waNumber;
+  if (cfg.webhookUrl) document.getElementById('webhookUrl').value = cfg.webhookUrl;
+  if (cfg.interval)   document.getElementById('interval').value   = cfg.interval;
+  if (cfg.timeout)    document.getElementById('timeout').value    = cfg.timeout;
+  if (cfg.rosVersion) document.getElementById('rosVersion').value = cfg.rosVersion;
+} catch(e) {}
+
+// ── Persistência ────────────────────────────────────────────────────────────
+function saveState() {
+  try {
+    localStorage.setItem('nw_equips', JSON.stringify(equips));
+    localStorage.setItem('nw_config', JSON.stringify({
+      clientName: document.getElementById('clientName').value,
+      clientId:   document.getElementById('clientId').value,
+      waNumber:   document.getElementById('waNumber').value,
+      interval:   document.getElementById('interval').value,
+      timeout:    document.getElementById('timeout').value,
+      rosVersion: document.getElementById('rosVersion').value,
+    }));
+  } catch(e) {}
+}
+
+['clientName','clientId','waNumber','interval','timeout','rosVersion'].forEach(id => {
+  document.getElementById(id).addEventListener('input', saveState);
+  document.getElementById(id).addEventListener('change', saveState);
+});
+
+// ── Render tabela ───────────────────────────────────────────────────────────
+function render() {
+  const tbody = document.getElementById('equipTable');
+  const emptyRow = document.getElementById('emptyRow');
+
+  // Remover rows anteriores (exceto emptyRow)
+  [...tbody.querySelectorAll('tr.eq-row')].forEach(r => r.remove());
+
+  if (equips.length === 0) {
+    emptyRow.hidden = false;
+    updateCounters();
+    return;
+  }
+  emptyRow.hidden = true;
+
+  equips.forEach((eq, idx) => {
+    const tr = document.createElement('tr');
+    tr.className = 'eq-row';
+
+    const badgeColor = badgeStyle(eq.nome);
+    tr.innerHTML = `
+      <td>${esc(eq.ip)}</td>
+      <td class="nome">${esc(eq.nome)}</td>
+      <td class="tipo"><span class="badge" style="${badgeColor}">${tipoLabel(eq.nome)}</span></td>
+      <td><button class="btn btn-danger" onclick="removeEquip(${idx})">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  updateCounters();
+  saveState();
+}
+
+function badgeStyle(nome) {
+  const n = nome.toUpperCase();
+  if (n.includes('CFTV'))   return 'background:#1e3a8a22;border-color:#3b82f699;color:#60a5fa';
+  if (n.includes('ACESSO')) return 'background:#14532d22;border-color:#22c55e99;color:#4ade80';
+  if (n.includes('ALARME')) return 'background:#7f1d1d22;border-color:#ef444499;color:#f87171';
+  if (n.includes('REDE'))   return 'background:#78350f22;border-color:#f59e0b99;color:#fbbf24';
+  return '';
+}
+
+function tipoLabel(nome) {
+  const n = nome.toUpperCase();
+  if (n.includes('DVR'))    return 'DVR';
+  if (n.includes('CAMERA') || n.includes('CÂMERA')) return 'Câmera';
+  if (n.includes('FACIAL')) return 'Facial';
+  if (n.includes('CIP'))    return 'CIP 850';
+  if (n.includes('TIP'))    return 'TIP 125i';
+  if (n.includes('XPE'))    return 'XPE 1001';
+  if (n.includes('ACESSO')) return 'Acesso';
+  if (n.includes('ALARME')) return 'Alarme';
+  if (n.includes('SWITCH')) return 'Switch';
+  if (n.includes('GATEWAY'))return 'Gateway';
+  if (n.includes('REDE'))   return 'Rede';
+  return 'Outro';
+}
+
+function updateCounters() {
+  document.getElementById('countTotal').textContent  = equips.length;
+  document.getElementById('countCftv').textContent   = equips.filter(e => e.nome.toUpperCase().includes('CFTV')).length;
+  document.getElementById('countAcesso').textContent = equips.filter(e => e.nome.toUpperCase().includes('ACESSO')).length;
+  document.getElementById('countAlarme').textContent = equips.filter(e => e.nome.toUpperCase().includes('ALARME')).length;
+  document.getElementById('countRede').textContent   = equips.filter(e => e.nome.toUpperCase().includes('REDE')).length;
+}
+
+// ── Adicionar ───────────────────────────────────────────────────────────────
+function addEquip() {
+  const ipEl   = document.getElementById('newIp');
+  const nomeEl = document.getElementById('newNome');
+  const tipoEl = document.getElementById('newTipo');
+
+  const ip   = ipEl.value.trim();
+  const nome = nomeEl.value.trim() || tipoEl.value;
+
+  if (!ip) { ipEl.focus(); return; }
+  if (!nome) { nomeEl.focus(); return; }
+
+  equips.push({ ip, nome });
+  ipEl.value = '';
+  nomeEl.value = '';
+  ipEl.focus();
+  render();
+}
+
+function removeEquip(idx) {
+  equips.splice(idx, 1);
+  render();
+}
+
+function addOnEnter(e) {
+  if (e.key === 'Enter') addEquip();
+}
+
+// ── Importar ────────────────────────────────────────────────────────────────
+function openImport() {
+  document.getElementById('importModal').hidden = false;
+  document.getElementById('importText').value = '';
+}
+
+function closeImportModal() {
+  document.getElementById('importModal').hidden = true;
+}
+
+function processImport() {
+  const raw = document.getElementById('importText').value.trim();
+  if (!raw) return;
+
+  let added = 0;
+  raw.split('\n').forEach(line => {
+    line = line.trim();
+    if (!line) return;
+    const sep = line.indexOf(';');
+    if (sep < 0) return;
+    const ip   = line.slice(0, sep).trim();
+    const nome = line.slice(sep + 1).trim();
+    if (ip && nome) {
+      equips.push({ ip, nome });
+      added++;
+    }
+  });
+
+  closeImportModal();
+  render();
+  if (added > 0) showToast(`${added} equipamento${added > 1 ? 's' : ''} importado${added > 1 ? 's' : ''}!`);
+}
+
+// ── Gerar Script ─────────────────────────────────────────────────────────────
+function generateScript() {
+  if (equips.length === 0) {
+    showToast('Adicione equipamentos primeiro!');
+    return;
+  }
+
+  const clientName = document.getElementById('clientName').value.trim() || 'CLIENTE';
+  const clientId   = document.getElementById('clientId').value.trim();
+  const waNumber   = document.getElementById('waNumber').value.trim().replace(/\D/g,'');
+  const webhook    = 'https://n8n.oreonsolucoes.dpdns.org/webhook/29c0a7b6-e1f3-4d19-9a81-9565b91ebf70';
+  const interval   = document.getElementById('interval').value;
+  const timeout    = document.getElementById('timeout').value;
+  const ros        = document.getElementById('rosVersion').value;
+
+  const header = clientId ? `${clientId} - ${clientName}` : clientName;
+  const rosLabel = ros === '6' ? 'ROUTEROS 6.49.17' : 'ROUTEROS 7.x';
+
+  // UP e DOWN script inline (funciona no ROS 6 e 7)
+  const upScript   = `:local Host \\$host; :local Comment ""; :foreach i in=[/tool netwatch find] do={ :if ([/tool netwatch get \\$i host] = \\$Host) do={ :set Comment [/tool netwatch get \\$i comment] } }; :local Router [/system identity get name]; :local Json (\\"{\\\\\\\"status\\\\\\\":\\\\\\\"up\\\\\\\",\\\\\\\"host\\\\\\\":\\\\\\\"\\" . \\$Host . \\"\\\\\\\",\\\\\\\"nome\\\\\\\":\\\\\\\"\\" . \\$Comment . \\"\\\\\\\",\\\\\\\"router\\\\\\\":\\\\\\\"\\" . \\$Router . \\"\\\\\\\"}\\"); /tool fetch url=\\"${webhook}\\" http-method=post http-header-field=\\"Content-Type: application/json\\" http-data=\\$Json mode=https output=none`;
+  const downScript = `:local Host \\$host; :local Comment ""; :foreach i in=[/tool netwatch find] do={ :if ([/tool netwatch get \\$i host] = \\$Host) do={ :set Comment [/tool netwatch get \\$i comment] } }; :local Router [/system identity get name]; :local Json (\\"{\\\\\\\"status\\\\\\\":\\\\\\\"down\\\\\\\",\\\\\\\"host\\\\\\\":\\\\\\\"\\" . \\$Host . \\"\\\\\\\",\\\\\\\"nome\\\\\\\":\\\\\\\"\\" . \\$Comment . \\"\\\\\\\",\\\\\\\"router\\\\\\\":\\\\\\\"\\" . \\$Router . \\"\\\\\\\"}\\"); /tool fetch url=\\"${webhook}\\" http-method=post http-header-field=\\"Content-Type: application/json\\" http-data=\\$Json mode=https output=none`;
+
+  // Agrupar por tipo para organizar com comentários
+  const grupos = {};
+  equips.forEach(eq => {
+    const n = eq.nome.toUpperCase();
+    let grupo = 'OUTROS';
+    if (n.includes('DVR'))    grupo = 'CFTV - DVRs';
+    else if (n.includes('CFTV')) grupo = 'CFTV - Câmeras';
+    else if (n.includes('ACESSO')) grupo = 'Controle de Acesso';
+    else if (n.includes('ALARME')) grupo = 'Alarme';
+    else if (n.includes('REDE')) grupo = 'Rede';
+    if (!grupos[grupo]) grupos[grupo] = [];
+    grupos[grupo].push(eq);
+  });
+
+  let hostsBlock = '';
+  Object.entries(grupos).forEach(([grupo, items]) => {
+    hostsBlock += `\n    # ${'-'.repeat(25)}\n    # ${grupo}\n    # ${'-'.repeat(25)}\n`;
+    items.forEach(eq => {
+      hostsBlock += `    {"${eq.ip}";"${eq.nome}"};\n`;
+    });
+  });
+
+  const waFull = waNumber ? `55${waNumber}` : '';
+  const waLine = waFull ? `# WhatsApp destino : ${waFull}\n` : '';
+
+  const script = `# ${'='.repeat(58)}
+# HAGANA - NETWATCH + N8N
+# ${header}
+# ${rosLabel}
+# ${'='.repeat(58)}
+
+# ${'='.repeat(58)}
+# CONFIGURACAO
+# ${'='.repeat(58)}
+
+:local webhookURL "${webhook}"
+${waLine}
+
+# ${'='.repeat(58)}
+# LISTA DE EQUIPAMENTOS
+#
+# Formato: {"IP";"NOME DO EQUIPAMENTO"}
+# ${'='.repeat(58)}
+
+:local hosts {
+${hostsBlock}}
+
+# ${'='.repeat(58)}
+# CADASTRO NO NETWATCH
+# ${'='.repeat(58)}
+
+:foreach item in=\\$hosts do={
+
+    :local ip (\\$item->0)
+    :local nome (\\$item->1)
+
+    /tool netwatch add \\
+        host=\\$ip \\
+        interval=${interval} \\
+        timeout=${timeout} \\
+        comment=\\$nome \\
+        up-script=(":local Host \\\\$host; :local Comment \\"\\"; :foreach i in=[/tool netwatch find] do={ :if ([/tool netwatch get \\\\$i host] = \\\\$Host) do={ :set Comment [/tool netwatch get \\\\$i comment] } }; :local Router [/system identity get name]; :local Wa \\"${waFull}\\"; :local Json (\\"{\\\\\\\\\\\\\"status\\\\\\\\\\\\\":\\\\\\\\\\\\\"up\\\\\\\\\\\\\",\\\\\\\\\\\\\"host\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Host . \\"\\\\\\\\\\\\\",\\\\\\\\\\\\\"nome\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Comment . \\"\\\\\\\\\\\\\",\\\\\\\\\\\\\"router\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Router . \\"\\\\\\\\\\\\\",\\\\\\\\\\\\\"whatsapp\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Wa . \\"\\\\\\\\\\\\\"}\\"); /tool fetch url=\\"" . \\$webhookURL . "\\" http-method=post http-header-field=\\"Content-Type: application/json\\" http-data=\\\\$Json mode=https output=none") \\
+        down-script=(":local Host \\\\$host; :local Comment \\"\\"; :foreach i in=[/tool netwatch find] do={ :if ([/tool netwatch get \\\\$i host] = \\\\$Host) do={ :set Comment [/tool netwatch get \\\\$i comment] } }; :local Router [/system identity get name]; :local Wa \\"${waFull}\\"; :local Json (\\"{\\\\\\\\\\\\\"status\\\\\\\\\\\\\":\\\\\\\\\\\\\"down\\\\\\\\\\\\\",\\\\\\\\\\\\\"host\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Host . \\"\\\\\\\\\\\\\",\\\\\\\\\\\\\"nome\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Comment . \\"\\\\\\\\\\\\\",\\\\\\\\\\\\\"router\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Router . \\"\\\\\\\\\\\\\",\\\\\\\\\\\\\"whatsapp\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Wa . \\"\\\\\\\\\\\\\"}\\"); /tool fetch url=\\"" . \\$webhookURL . "\\" http-method=post http-header-field=\\"Content-Type: application/json\\" http-data=\\\\$Json mode=https output=none")
+}
+
+# ${'='.repeat(58)}
+# CONFIRMACAO
+# ${'='.repeat(58)}
+
+:put "${'='.repeat(46)}"
+:put " HAGANA NETWATCH"
+:put " ${header}"
+:put " ${rosLabel}"
+:put "${'='.repeat(46)}"
+:put ("Equipamentos cadastrados: " . [:len \\$hosts])
+:put "Webhook N8N configurado."
+:put "${'='.repeat(46)}"`;
+
+  document.getElementById('scriptOutput').textContent = script;
+  document.getElementById('scriptModal').hidden = false;
+}
+
+// ── Modal utils ──────────────────────────────────────────────────────────────
+function closeScriptModal() {
+  document.getElementById('scriptModal').hidden = true;
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('scriptModal')) closeScriptModal();
+  if (e.target === document.getElementById('importModal')) closeImportModal();
+}
+
+function copyScript() {
+  const text = document.getElementById('scriptOutput').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Script copiado!');
+  }).catch(() => {
+    const sel = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(document.getElementById('scriptOutput'));
+    sel.removeAllRanges();
+    sel.addRange(range);
+    showToast('Selecione e copie manualmente (Ctrl+C)');
+  });
+}
+
+// ── Limpar tudo ──────────────────────────────────────────────────────────────
+function clearAll() {
+  if (equips.length === 0) return;
+  equips = [];
+  render();
+  showToast('Lista limpa!');
+}
+
+// ── Escape HTML ──────────────────────────────────────────────────────────────
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+render();
+</script>
