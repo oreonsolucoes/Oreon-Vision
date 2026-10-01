@@ -582,10 +582,12 @@ td.tipo .badge {
     </div>
     <div class="modal-body">
       <div class="import-area">
-        <p class="import-hint">Cole uma lista no formato <code>IP;NOME</code>, uma por linha. Exemplo:</p>
-        <p class="import-hint" style="font-family:'JetBrains Mono',monospace; background:var(--bg3); padding:8px 10px; border-radius:6px; border:1px solid var(--border)">192.168.1.10;CFTV - Camera - Entrada Principal<br>192.168.1.50;ACESSO - Facial - Portao Social</p>
-        <textarea id="importText" placeholder="192.168.1.10;CFTV - Camera - Entrada Principal
-192.168.1.50;ACESSO - Facial - Portao Social"></textarea>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px 14px;margin-bottom:4px">
+          <p style="margin:0 0 6px;font-size:12px;color:var(--fg2)">Formato: <code style="color:var(--accent)">IP;NOME DO EQUIPAMENTO</code> — uma por linha</p>
+          <p style="margin:0;font-size:11px;color:var(--fg2);font-family:'JetBrains Mono',monospace;line-height:1.8">192.168.1.10;CFTV - Camera - Entrada Principal<br>192.168.1.50;ACESSO - Facial - Portao Social</p>
+        </div>
+        <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--fg2);display:block;margin:12px 0 6px">Cole sua lista aqui:</label>
+        <textarea id="importText" placeholder="192.168.1.10;CFTV - Camera - Entrada Principal"></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -730,8 +732,11 @@ function addOnEnter(e) {
 
 // ── Importar ────────────────────────────────────────────────────────────────
 function openImport() {
+  const ta = document.getElementById('importText');
+  ta.value = '';
+  ta.textContent = '';
   document.getElementById('importModal').hidden = false;
-  document.getElementById('importText').value = '';
+  setTimeout(() => ta.focus(), 50);
 }
 
 function closeImportModal() {
