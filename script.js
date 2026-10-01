@@ -126,13 +126,14 @@ function addOnEnter(e) {
 
 // ── Importar ────────────────────────────────────────────────────────────────
 function openImport() {
-  document.getElementById('importText').value = '';
-  document.getElementById('importModal').hidden = false;
-  setTimeout(() => document.getElementById('importText').focus(), 60);
+  const ta = document.getElementById('importText');
+  ta.value = '';
+  document.getElementById('importModal').classList.add('open');
+  setTimeout(() => ta.focus(), 80);
 }
 
 function closeImportModal() {
-  document.getElementById('importModal').hidden = true;
+  document.getElementById('importModal').classList.remove('open');
 }
 
 function processImport() {
@@ -250,12 +251,12 @@ ${hostsBlock}}
 :put "${eq2}"`;
 
   document.getElementById('scriptOutput').textContent = script;
-  document.getElementById('scriptModal').hidden = false;
+  document.getElementById('scriptModal').classList.add('open');
 }
 
 // ── Modal utils ──────────────────────────────────────────────────────────────
 function closeScriptModal() {
-  document.getElementById('scriptModal').hidden = true;
+  document.getElementById('scriptModal').classList.remove('open');
 }
 
 function closeModal(e) {
@@ -303,6 +304,14 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
 }
+
+// ── Fechar modais ao clicar no fundo ─────────────────────────────────────────
+document.getElementById('scriptModal').addEventListener('click', function(e) {
+  if (e.target === this) closeScriptModal();
+});
+document.getElementById('importModal').addEventListener('click', function(e) {
+  if (e.target === this) closeImportModal();
+});
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 render();
