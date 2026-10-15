@@ -171,8 +171,10 @@ function generateScript() {
   const header   = clientId ? `${clientId} - ${clientName}` : clientName;
   const rosLabel = ros === '6' ? 'ROUTEROS 6.49.17' : 'ROUTEROS 7.x';
 
-  // Agrupar por categoria
+  // Agrupar por categoria (ordem fixa — DVRs sempre antes de Câmeras)
+  const ORDEM_GRUPOS = ['CFTV - DVRs', 'CFTV - Cameras', 'Controle de Acesso', 'Alarme', 'Rede', 'OUTROS'];
   const grupos = {};
+  ORDEM_GRUPOS.forEach(g => { grupos[g] = []; });
   equips.forEach(eq => {
     const n = eq.nome.toUpperCase();
     let grupo = 'OUTROS';
@@ -181,12 +183,11 @@ function generateScript() {
     else if (n.includes('ACESSO')) grupo = 'Controle de Acesso';
     else if (n.includes('ALARME')) grupo = 'Alarme';
     else if (n.includes('REDE'))   grupo = 'Rede';
-    if (!grupos[grupo]) grupos[grupo] = [];
     grupos[grupo].push(eq);
   });
 
   let hostsBlock = '';
-  Object.entries(grupos).forEach(([grupo, items]) => {
+  Object.entries(grupos).filter(([, items]) => items.length > 0).forEach(([grupo, items]) => {
     hostsBlock += `\n    # ${'-'.repeat(25)}\n    # ${grupo}\n    # ${'-'.repeat(25)}\n`;
     items.forEach(eq => { hostsBlock += `    {"${eq.ip}";"${eq.nome}"};\n`; });
   });
