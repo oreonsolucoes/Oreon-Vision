@@ -198,31 +198,27 @@ function generateScript() {
   const EQ  = '='.repeat(58);
   const eq2 = '='.repeat(46);
 
-  // Script de notificacao (guardado no proprio Mikrotik). Linhas "cruas":
-  const q = '$q';
-  const notifyLines = [
-    ':global nwS',
-    ':global nwH',
-    ':global nwN',
-    ':local q "\\22"',
-    ':local r [/system identity get name]',
-    ':local j ("{" . $q . "status" . $q . ":" . $q . $nwS . $q . "," . $q . "host" . $q . ":" . $q . $nwH . $q . "," . $q . "nome" . $q . ":" . $q . $nwN . $q . "," . $q . "router" . $q . ":" . $q . $r . $q . "," . $q . "whatsapp" . $q . ":" . $q . "' + waFull + '" . $q . "}")',
-    '/tool fetch url="' + webhook + '" http-method=post http-header-field="Content-Type: application/json" http-data=$j mode=https output=none'
-  ];
-  const notifySource = rosEsc(notifyLines.join('\n')).replace(/\n/g, '\\n');
+  // Monta o script (texto ja gravado no Netwatch) para um evento up/down
+  const buildNotify = (status, ip, nome) => {
+    const nomeJson = rosEsc(nome.replace(/["\\]/g, ''));
+    return ':local Router [/system identity get name]; ' +
+      ':local Json ("{\\"status\\":\\"' + status + '\\",\\"host\\":\\"' + ip + '\\",\\"nome\\":\\"' + nomeJson +
+      '\\",\\"router\\":\\"" . $Router . "\\",\\"whatsapp\\":\\"' + waFull + '\\"}"); ' +
+      '/tool fetch url="' + webhook + '" http-method=post http-header-field="Content-Type: application/json" ' +
+      'http-data=$Json mode=https output=none';
+  };
 
-  // Ordem fixa dos grupos
   let hostsBlock = '';
   Object.entries(grupos).filter(([, items]) => items.length > 0).forEach(([grupo, items]) => {
     hostsBlock += '\n# ' + '-'.repeat(25) + '\n# ' + grupo + '\n# ' + '-'.repeat(25) + '\n';
     items.forEach(eq => {
       const ip   = eq.ip.replace(/[^0-9a-zA-Z.:-]/g, '');
       const nome = eq.nome.replace(/[\r\n]/g, ' ').trim();
-      const upS   = ':global nwS "up"; :global nwH "'   + rosEsc(ip) + '"; :global nwN "' + rosEsc(nome) + '"; /system script run nw-notify';
-      const downS = ':global nwS "down"; :global nwH "' + rosEsc(ip) + '"; :global nwN "' + rosEsc(nome) + '"; /system script run nw-notify';
       hostsBlock += '/tool netwatch remove [find host="' + ip + '"]\n';
       hostsBlock += '/tool netwatch add host=' + ip + ' interval=' + interval + ' timeout=' + timeout +
-                    ' comment="' + rosEsc(nome) + '" up-script="' + rosEsc(upS) + '" down-script="' + rosEsc(downS) + '"\n';
+                    ' comment="' + rosEsc(nome) + '"' +
+                    ' up-script="' + rosEsc(buildNotify('up', ip, nome)) + '"' +
+                    ' down-script="' + rosEsc(buildNotify('down', ip, nome)) + '"\n';
     });
   });
 
@@ -234,18 +230,14 @@ function generateScript() {
 waLine +
 '# Cole em: System > Scripts > Add > Source  (ou no Terminal)\n' +
 '# ' + EQ + '\n\n' +
-'# 1) SCRIPT DE NOTIFICACAO (chamado pelo Netwatch)\n' +
-'/system script remove [find name="nw-notify"]\n' +
-'/system script add name=nw-notify source="' + notifySource + '"\n\n' +
-'# 2) EQUIPAMENTOS NO NETWATCH\n' +
+'/system script remove [find name="nw-notify"]\n\n' +
+'# EQUIPAMENTOS NO NETWATCH\n' +
 hostsBlock + '\n' +
-'# 3) CONFIRMACAO\n' +
+'# CONFIRMACAO\n' +
 ':put "' + eq2 + '"\n' +
 ':put " HAGANA NETWATCH - ' + rosEsc(header) + '"\n' +
 ':put ("Netwatch cadastrados: " . [:len [/tool netwatch find]])\n' +
-':put "' + eq2 + '"\n' +
-'\n# TESTE MANUAL (opcional, tire o # e rode): dispara um aviso agora\n' +
-'# :global nwS "up"; :global nwH "TESTE"; :global nwN "TESTE MANUAL"; /system script run nw-notify\n';
+':put "' + eq2 + '"\n';
 
   document.getElementById('scriptOutput').textContent = script;
   document.getElementById('scriptModal').classList.add('open');
