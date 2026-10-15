@@ -186,70 +186,66 @@ function generateScript() {
     grupos[grupo].push(eq);
   });
 
-  let hostsBlock = '';
-  Object.entries(grupos).filter(([, items]) => items.length > 0).forEach(([grupo, items]) => {
-    hostsBlock += `\n    # ${'-'.repeat(25)}\n    # ${grupo}\n    # ${'-'.repeat(25)}\n`;
-    items.forEach(eq => { hostsBlock += `    {"${eq.ip}";"${eq.nome}"};\n`; });
-  });
+  // Escapa texto para dentro de uma string "..." do RouterOS
+  const rosEsc = t => String(t)
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\$/g, '\\$')
+    .replace(/\?/g, '\\?');
 
-  const waFull = waNumber ? `55${waNumber}` : '';
-  const waLine = waFull   ? `# WhatsApp destino : ${waFull}\n` : '';
-
-  const EQ = '='.repeat(58);
+  const waFull = waNumber ? '55' + waNumber : '';
+  const waLine = waFull ? '# WhatsApp destino : ' + waFull + '\n' : '';
+  const EQ  = '='.repeat(58);
   const eq2 = '='.repeat(46);
 
+  // Script de notificacao (guardado no proprio Mikrotik). Linhas "cruas":
+  const q = '$q';
+  const notifyLines = [
+    ':global nwS',
+    ':global nwH',
+    ':global nwN',
+    ':local q "\\22"',
+    ':local r [/system identity get name]',
+    ':local j ("{" . $q . "status" . $q . ":" . $q . $nwS . $q . "," . $q . "host" . $q . ":" . $q . $nwH . $q . "," . $q . "nome" . $q . ":" . $q . $nwN . $q . "," . $q . "router" . $q . ":" . $q . $r . $q . "," . $q . "whatsapp" . $q . ":" . $q . "' + waFull + '" . $q . "}")',
+    '/tool fetch url="' + webhook + '" http-method=post http-header-field="Content-Type: application/json" http-data=$j mode=https output=none'
+  ];
+  const notifySource = rosEsc(notifyLines.join('\n')).replace(/\n/g, '\\n');
+
+  // Ordem fixa dos grupos
+  let hostsBlock = '';
+  Object.entries(grupos).filter(([, items]) => items.length > 0).forEach(([grupo, items]) => {
+    hostsBlock += '\n# ' + '-'.repeat(25) + '\n# ' + grupo + '\n# ' + '-'.repeat(25) + '\n';
+    items.forEach(eq => {
+      const ip   = eq.ip.replace(/[^0-9a-zA-Z.:-]/g, '');
+      const nome = eq.nome.replace(/[\r\n]/g, ' ').trim();
+      const upS   = ':global nwS "up"; :global nwH "'   + rosEsc(ip) + '"; :global nwN "' + rosEsc(nome) + '"; /system script run nw-notify';
+      const downS = ':global nwS "down"; :global nwH "' + rosEsc(ip) + '"; :global nwN "' + rosEsc(nome) + '"; /system script run nw-notify';
+      hostsBlock += '/tool netwatch remove [find host="' + ip + '"]\n';
+      hostsBlock += '/tool netwatch add host=' + ip + ' interval=' + interval + ' timeout=' + timeout +
+                    ' comment="' + rosEsc(nome) + '" up-script="' + rosEsc(upS) + '" down-script="' + rosEsc(downS) + '"\n';
+    });
+  });
+
   const script =
-`# ${EQ}
-# HAGANA - NETWATCH + N8N
-# ${header}
-# ${rosLabel}
-# ${EQ}
-
-# ${EQ}
-# CONFIGURACAO
-# ${EQ}
-
-:local webhookURL "${webhook}"
-${waLine}
-# ${EQ}
-# LISTA DE EQUIPAMENTOS
-#
-# Formato: {"IP";"NOME DO EQUIPAMENTO"}
-# ${EQ}
-
-:local hosts {
-${hostsBlock}}
-
-# ${EQ}
-# CADASTRO NO NETWATCH
-# ${EQ}
-
-:foreach item in=\\$hosts do={
-
-    :local ip   (\\$item->0)
-    :local nome (\\$item->1)
-
-    /tool netwatch add \\
-        host=\\$ip \\
-        interval=${interval} \\
-        timeout=${timeout} \\
-        comment=\\$nome \\
-        up-script=(":local Host \\\\$host; :local Comment \\"\\"; :foreach i in=[/tool netwatch find] do={ :if ([/tool netwatch get \\\\$i host] = \\\\$Host) do={ :set Comment [/tool netwatch get \\\\$i comment] } }; :local Router [/system identity get name]; :local Wa \\"${waFull}\\"; :local Json (\\"{\\\\\\\\\\\\\"status\\\\\\\\\\\\\":\\\\\\\\\\\\\"up\\\\\\\\\\\\\",\\\\\\\\\\\\\"host\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Host . \\"\\\\\\\\\\\\\",\\\\\\\\\\\\\"nome\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Comment . \\"\\\\\\\\\\\\\",\\\\\\\\\\\\\"router\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Router . \\"\\\\\\\\\\\\\",\\\\\\\\\\\\\"whatsapp\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Wa . \\"\\\\\\\\\\\\\"}\\"); /tool fetch url=\\"" . \\$webhookURL . "\\" http-method=post http-header-field=\\"Content-Type: application/json\\" http-data=\\\\$Json mode=https output=none") \\
-        down-script=(":local Host \\\\$host; :local Comment \\"\\"; :foreach i in=[/tool netwatch find] do={ :if ([/tool netwatch get \\\\$i host] = \\\\$Host) do={ :set Comment [/tool netwatch get \\\\$i comment] } }; :local Router [/system identity get name]; :local Wa \\"${waFull}\\"; :local Json (\\"{\\\\\\\\\\\\\"status\\\\\\\\\\\\\":\\\\\\\\\\\\\"down\\\\\\\\\\\\\",\\\\\\\\\\\\\"host\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Host . \\"\\\\\\\\\\\\\",\\\\\\\\\\\\\"nome\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Comment . \\"\\\\\\\\\\\\\",\\\\\\\\\\\\\"router\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Router . \\"\\\\\\\\\\\\\",\\\\\\\\\\\\\"whatsapp\\\\\\\\\\\\\":\\\\\\\\\\\\\"\\" . \\\\$Wa . \\"\\\\\\\\\\\\\"}\\"); /tool fetch url=\\"" . \\$webhookURL . "\\" http-method=post http-header-field=\\"Content-Type: application/json\\" http-data=\\\\$Json mode=https output=none")
-}
-
-# ${EQ}
-# CONFIRMACAO
-# ${EQ}
-
-:put "${eq2}"
-:put " HAGANA NETWATCH"
-:put " ${header}"
-:put " ${rosLabel}"
-:put "${eq2}"
-:put ("Equipamentos cadastrados: " . [:len \\$hosts])
-:put "Webhook N8N configurado."
-:put "${eq2}"`;
+'# ' + EQ + '\n' +
+'# HAGANA - NETWATCH + N8N\n' +
+'# ' + header + '\n' +
+'# ' + rosLabel + '\n' +
+waLine +
+'# Cole em: System > Scripts > Add > Source  (ou no Terminal)\n' +
+'# ' + EQ + '\n\n' +
+'# 1) SCRIPT DE NOTIFICACAO (chamado pelo Netwatch)\n' +
+'/system script remove [find name="nw-notify"]\n' +
+'/system script add name=nw-notify source="' + notifySource + '"\n\n' +
+'# 2) EQUIPAMENTOS NO NETWATCH\n' +
+hostsBlock + '\n' +
+'# 3) CONFIRMACAO\n' +
+':put "' + eq2 + '"\n' +
+':put " HAGANA NETWATCH - ' + rosEsc(header) + '"\n' +
+':put ("Netwatch cadastrados: " . [:len [/tool netwatch find]])\n' +
+':put "' + eq2 + '"\n' +
+'\n# TESTE MANUAL (opcional, tire o # e rode): dispara um aviso agora\n' +
+'# :global nwS "up"; :global nwH "TESTE"; :global nwN "TESTE MANUAL"; /system script run nw-notify\n';
 
   document.getElementById('scriptOutput').textContent = script;
   document.getElementById('scriptModal').classList.add('open');
